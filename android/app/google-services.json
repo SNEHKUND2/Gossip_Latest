@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "47060593395",
+    "project_id": "gossip-letest",
+    "storage_bucket": "gossip-letest.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:47060593395:android:52a33327b547482e4ae586",
+        "android_client_info": {
+          "package_name": "com.example.gossip_letest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCft2COb1GCypm3gI0Ogimd5DujiciQtbs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
