@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gossip_letest/helper/helper_function.dart';
-import 'package:gossip_letest/pages/chat_page.dart';
+import 'package:gossip_letest/pages/group_page.dart';
 import 'package:gossip_letest/service/database_service.dart';
 import 'package:gossip_letest/widgets/widgets.dart';
 
@@ -70,7 +70,7 @@ class _SearchPageState extends State<SearchPage> {
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
                         border: InputBorder.none,
-                        hintText: "Search groups....",
+                        hintText: "Search community....",
                         hintStyle:
                             TextStyle(color: Colors.white, fontSize: 16)),
                   ),
@@ -179,7 +179,7 @@ class _SearchPageState extends State<SearchPage> {
             Future.delayed(const Duration(seconds: 2), () {
               nextScreen(
                   context,
-                  ChatPage(
+                  GroupPage(
                       groupId: groupId,
                       groupName: groupName,
                       userName: userName));

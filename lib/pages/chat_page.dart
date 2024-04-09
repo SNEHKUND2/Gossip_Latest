@@ -1,154 +1,133 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:gossip_letest/pages/group_info.dart';
-import 'package:gossip_letest/service/database_service.dart';
-import 'package:gossip_letest/widgets/message_tile.dart';
-import 'package:gossip_letest/widgets/widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gossip_letest/pages/message_bubble.dart';
 
 class ChatPage extends StatefulWidget {
-  final String groupId;
-  final String groupName;
-  final String userName;
-  const ChatPage(
-      {Key? key,
-      required this.groupId,
-      required this.groupName,
-      required this.userName})
+  final String userId;
+  final String recipientId;
+
+  const ChatPage({Key? key, required this.userId, required this.recipientId})
       : super(key: key);
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
+  _ChatPageState createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  Stream<QuerySnapshot>? chats;
-  TextEditingController messageController = TextEditingController();
-  String admin = "";
+  final TextEditingController _messageController = TextEditingController();
+  late Stream<QuerySnapshot> _chatStream;
 
   @override
   void initState() {
-    getChatandAdmin();
     super.initState();
-  }
-
-  getChatandAdmin() {
-    DatabaseService().getChats(widget.groupId).then((val) {
-      setState(() {
-        chats = val;
-      });
-    });
-    DatabaseService().getGroupAdmin(widget.groupId).then((val) {
-      setState(() {
-        admin = val;
-      });
-    });
+    _chatStream = FirebaseFirestore.instance
+        .collection('chats')
+        .doc(_getChatId())
+        .collection('messages')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        centerTitle: true,
-        elevation: 0,
-        title: Text(widget.groupName),
-        backgroundColor: Theme.of(context).primaryColor,
-        actions: [
-          IconButton(
-              onPressed: () {
-                nextScreen(
-                    context,
-                    GroupInfo(
-                      groupId: widget.groupId,
-                      groupName: widget.groupName,
-                      adminName: admin,
-                    ));
-              },
-              icon: const Icon(Icons.info))
-        ],
+        title: Text('Chat'),
       ),
-      body: Stack(
+      body: Column(
         children: <Widget>[
-          // chat messages here
-          chatMessages(),
-          Container(
-            alignment: Alignment.bottomCenter,
-            width: MediaQuery.of(context).size.width,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-              width: MediaQuery.of(context).size.width,
-              color: Colors.grey[700],
-              child: Row(children: [
-                Expanded(
-                    child: TextFormField(
-                  controller: messageController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    hintText: "Send a message...",
-                    hintStyle: TextStyle(color: Colors.white, fontSize: 16),
-                    border: InputBorder.none,
-                  ),
-                )),
-                const SizedBox(
-                  width: 12,
-                ),
-                GestureDetector(
-                  onTap: () {
-                    sendMessage();
-                  },
-                  child: Container(
-                    height: 50,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: const Center(
-                        child: Icon(
-                      Icons.send,
-                      color: Colors.white,
-                    )),
-                  ),
-                )
-              ]),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _chatStream,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                final messages = snapshot.data!.docs;
+                List<Widget> messageWidgets = [];
+                for (var message in messages) {
+                  final messageText = message['text'];
+                  final messageSender = message['sender'];
+                  final currentUser = widget.userId;
+
+                  final messageWidget = MessageBubble(
+                    text: messageText,
+                    sender: messageSender,
+                    isMe: currentUser == messageSender,
+                  );
+                  messageWidgets.add(messageWidget);
+                }
+                return ListView(
+                  reverse: true,
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                  children: messageWidgets,
+                );
+              },
             ),
-          )
+          ),
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.grey),
+              ),
+            ),
+            child: _buildMessageComposer(),
+          ),
         ],
       ),
     );
   }
 
-  chatMessages() {
-    return StreamBuilder(
-      stream: chats,
-      builder: (context, AsyncSnapshot snapshot) {
-        return snapshot.hasData
-            ? ListView.builder(
-                itemCount: snapshot.data.docs.length,
-                itemBuilder: (context, index) {
-                  return MessageTile(
-                      message: snapshot.data.docs[index]['message'],
-                      sender: snapshot.data.docs[index]['sender'],
-                      sentByMe: widget.userName ==
-                          snapshot.data.docs[index]['sender']);
-                },
-              )
-            : Container();
-      },
+  Widget _buildMessageComposer() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8),
+      height: 70,
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              textCapitalization: TextCapitalization.sentences,
+              onChanged: (value) {
+                // Implement any typing indicator logic here
+              },
+              decoration: InputDecoration.collapsed(
+                hintText: 'Send a message...',
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.send),
+            onPressed: () {
+              _sendMessage();
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  sendMessage() {
-    if (messageController.text.isNotEmpty) {
-      Map<String, dynamic> chatMessageMap = {
-        "message": messageController.text,
-        "sender": widget.userName,
-        "time": DateTime.now().millisecondsSinceEpoch,
-      };
-
-      DatabaseService().sendMessage(widget.groupId, chatMessageMap);
-      setState(() {
-        messageController.clear();
+  void _sendMessage() {
+    String messageText = _messageController.text.trim();
+    if (messageText.isNotEmpty) {
+      FirebaseFirestore.instance
+          .collection('chats')
+          .doc(_getChatId())
+          .collection('messages')
+          .add({
+        'text': messageText,
+        'sender': widget.userId,
+        'timestamp': Timestamp.now(),
       });
+      _messageController.clear();
     }
+  }
+
+  String _getChatId() {
+    List<String> ids = [widget.userId, widget.recipientId];
+    ids.sort();
+    return ids.join('_');
   }
 }

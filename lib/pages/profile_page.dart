@@ -4,6 +4,7 @@ import 'package:gossip_letest/pages/home_page.dart';
 import 'package:gossip_letest/service/auth_service.dart';
 import 'package:gossip_letest/widgets/widgets.dart';
 
+// ignore: must_be_immutable
 class ProfilePage extends StatefulWidget {
   String userName;
   String email;

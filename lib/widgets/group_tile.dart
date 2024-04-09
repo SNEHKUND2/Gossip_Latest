@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:gossip_letest/pages/chat_page.dart';
+import 'package:gossip_letest/pages/group_page.dart';
 import 'package:gossip_letest/widgets/widgets.dart';
 
 class GroupTile extends StatefulWidget {
@@ -25,7 +25,7 @@ class _GroupTileState extends State<GroupTile> {
       onTap: () {
         nextScreen(
             context,
-            ChatPage(
+            GroupPage(
               groupId: widget.groupId,
               groupName: widget.groupName,
               userName: widget.userName,
